@@ -1,0 +1,29 @@
+**/\#*\#
+*.bkp
+*.iml
+*.so
+.DS_Store
+TEST-regression.tests.*
+api-docs/*
+project/target/
+build
+*.class
+*.log
+.DS_Store
+# sbt specific
+.cache/
+.history/
+.lib/
+dist/*
+target/
+# Scala-IDE specific
+.scala_dependencies
+.worksheet
+spark-warehouse
+build/
+.ensime*
+.idea/
+*.iml
+GPATH
+GRTAGS
+GTAGS

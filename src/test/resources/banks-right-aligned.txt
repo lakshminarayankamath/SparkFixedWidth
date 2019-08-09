@@ -1,0 +1,11 @@
+*This is a comment line
+############################Bank_Name###########CitySTCERT
+The National Republic Bank of Chicago########ChicagoIL1000
+#######################NBRS Financial#####Rising SunMD2000
+################GreenChoice Bank, fsb########ChicagoIL3000
+#############Eastside Commercial Bank########ConyersGA4000
+###############The Freedom State Bank########FreedomOK5000
+##########################Valley BankFort LauderdaleFL6000
+##########################Valley Bank#########MolineIL7000
+##########Slavie Federal Savings Bank########Bel AirMD8000
+################Columbia Savings Bank#####CincinnatiOH9000
