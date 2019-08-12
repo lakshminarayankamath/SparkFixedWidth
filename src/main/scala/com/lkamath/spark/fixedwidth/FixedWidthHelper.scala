@@ -1,7 +1,7 @@
 package com.lkamath.spark.fixedwidth
 
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-
 
 object FixedWidthHelper {
   case class FixedWidthFileMetadata(encoding: String,
@@ -35,21 +35,44 @@ object FixedWidthHelper {
         case last :: _ ⇒ {
           val rowLength = last.startPos + last.fieldWidth
           rowLength match {
-            case _ if rowLength < 0                           ⇒ this.maxRowLength
-            case _ if rowLength == Int.MaxValue               ⇒ this.maxRowLength
-            case _ if rowLength > this.maxRowLength           ⇒ this.maxRowLength
-            case _                                            ⇒ rowLength
+            case _ if rowLength < 0 ⇒ this.maxRowLength
+            case _ if rowLength == Int.MaxValue ⇒ this.maxRowLength
+            case _ if rowLength > this.maxRowLength ⇒ this.maxRowLength
+            case _ ⇒ rowLength
           }
         }
-        case Nil ⇒ throw new IllegalArgumentException(s"Fixed Width Columns must have at least one column")
+        case Nil ⇒
+          throw new IllegalArgumentException(
+            s"Fixed Width Columns must have at least one column"
+          )
       }
+    }
+
+    def getDummyColumnIndicesAsString(): String = {
+      val contiguousColumns = this.getContiguousColumns()
+      contiguousColumns.zipWithIndex
+        .map {
+          case (c, i) => {
+            if (c.colName.contains("dummy-col")) {
+              i
+            } else {
+              -1
+            }
+          }
+        }
+        .filter(_ >= 0)
+        .toList
+        .mkString(",")
     }
 
     def getColumnWidthsAsString(): String = {
       this.getContiguousColumns().map(col ⇒ col.fieldWidth).mkString(",")
     }
 
-    private def contiguousHelper(index: Int, fixedWidthColumns: List[FixedWidthColumn]): List[FixedWidthColumn] = {
+    private def contiguousHelper(
+      index: Int,
+      fixedWidthColumns: List[FixedWidthColumn]
+    ): List[FixedWidthColumn] = {
       val currentColumn = fixedWidthColumns(index)
       if (index < fixedWidthColumns.length - 1) {
         val nextStartPos = fixedWidthColumns(index + 1).startPos
@@ -60,9 +83,11 @@ object FixedWidthHelper {
           // Columns are non contiguous. Add current column and dummy column
           List(
             currentColumn,
-            FixedWidthColumn(s"dummy-col${index + 1}",
+            FixedWidthColumn(
+              s"dummy-col${index + 1}",
               currentColumn.fieldWidth + currentColumn.startPos,
-              nextStartPos - (currentColumn.fieldWidth + currentColumn.startPos))
+              nextStartPos - (currentColumn.fieldWidth + currentColumn.startPos)
+            )
           )
         }
       } else {
@@ -74,7 +99,20 @@ object FixedWidthHelper {
 
   case class FixedWidthColumn(colName: String, startPos: Int, fieldWidth: Int)
 
-  def createDataFrame(sparkSession: SparkSession, metadata: FixedWidthFileMetadata, filePath: String, optionsMap: Map[String, String] = Map.empty, inferSchema: Boolean = false): DataFrame = {
+  def createDataFrame(sparkSession: SparkSession,
+                      metadata: FixedWidthFileMetadata,
+                      filePath: String,
+                      optionsMap: Map[String, String] = Map.empty,
+                      inferSchema: Boolean = false): DataFrame = {
+    if (inferSchema) {
+      throw new Exception(
+        "inferSchema option cannot be set to True in this version because dataframe cannot be materialized."
+      )
+    }
+
+    val stringifiedSchema = StructType(
+      metadata.columns.map(c => StructField(c.colName, StringType, true))
+    )
     val df = sparkSession.read
       .format("fixed")
       .option("maxRowLength", metadata.maxRowLength.toString)
@@ -84,13 +122,14 @@ object FixedWidthHelper {
       .option("comment", metadata.commentChar)
       .option("encoding", metadata.encoding)
       .option("skipLines", metadata.skipLines)
-      .option("inferSchema", inferSchema)
+      .option("dummyColumnIndices", metadata.getDummyColumnIndicesAsString())
       .options(optionsMap)
+      .schema(stringifiedSchema)
       .load(filePath)
 
     val userColumnNames = metadata.columns.map(c => c.colName)
     // Select only those columns that are chosen by user in FixedWidthFileMetadata
-    val selectDf = df.select(userColumnNames.head, userColumnNames.tail : _*)
+    val selectDf = df.select(userColumnNames.head, userColumnNames.tail: _*)
     selectDf
   }
 }

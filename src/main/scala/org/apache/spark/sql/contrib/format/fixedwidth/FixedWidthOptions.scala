@@ -7,9 +7,9 @@ import java.util.Locale
 import org.apache.commons.lang3.time.FastDateFormat
 import org.apache.spark.sql.catalyst.util._
 
-class FixedWidthOptions(@transient private val parameters: CaseInsensitiveMap) extends Serializable {
+class FixedWidthOptions(@transient private val parameters: CaseInsensitiveMap[String]) extends Serializable {
 
-  def this(parameters: Map[String, String]) = this(new CaseInsensitiveMap(parameters))
+  def this(parameters: Map[String, String]) = this(CaseInsensitiveMap(parameters))
 
   /** Function to convert the string value of paramName to Char value
     *
@@ -80,8 +80,8 @@ class FixedWidthOptions(@transient private val parameters: CaseInsensitiveMap) e
   @SuppressWarnings(Array("org.wartremover.warts.Null"))
   private def getList(paramName: String, default: List[Int] = List.empty): List[Int] = {
     //Eg: if paramName="2,3,4" this function should return List(2,3,4)
-    val param = parameters.getOrElse(paramName, null)
-    if (param == null) {
+    val param = parameters.getOrElse(paramName, "")
+    if (param == "") {
       default
     } else {
       param.split(",").map(_.toInt).toList
@@ -107,16 +107,13 @@ class FixedWidthOptions(@transient private val parameters: CaseInsensitiveMap) e
   val headerFlag = getBool("header", true)
 
   // Indicates whether to infer file schema or not
-  val inferSchemaFlag = getBool("inferSchema", true)
+  val inferSchemaFlag = getBool("inferSchema")
 
   // Indicates the character that separates two consecutive records in a file
   val lineSeparator = parameters.getOrElse("recordSeparator", "\n")
 
   // Indicates how a NULL is represented in the file
   val nullValue = parameters.getOrElse("nullValue", "NULL")
-
-  // Indicates how a undefined value is represented
-  val nanValue = parameters.getOrElse("nanValue", "NaN")
 
   val dateFormat: SimpleDateFormat =
     new SimpleDateFormat(parameters.getOrElse("dateFormat", "yyyy-MM-dd"))
@@ -132,4 +129,6 @@ class FixedWidthOptions(@transient private val parameters: CaseInsensitiveMap) e
 
   val timestampFormat: FastDateFormat =
     FastDateFormat.getInstance(parameters.getOrElse("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSSZZ"), Locale.US)
+
+  val dummyColumnIndices = getList("dummyColumnIndices")
 }

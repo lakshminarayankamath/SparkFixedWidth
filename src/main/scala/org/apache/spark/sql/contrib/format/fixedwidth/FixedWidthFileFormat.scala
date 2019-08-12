@@ -91,6 +91,8 @@ class FixedWidthFileFormat extends TextBasedFileFormat with DataSourceRegister {
       sparkSession.sparkContext.broadcast(new SerializableConfiguration(hadoopConf))
     }
 
+    val dummyColumnIndices = fixedWidthOptions.dummyColumnIndices
+
     // Function that can be used to read a single file in as an Iterator of InternalRow.
     (file: PartitionedFile) ⇒
       {
@@ -133,9 +135,17 @@ class FixedWidthFileFormat extends TextBasedFileFormat with DataSourceRegister {
           // Convert to UTF-8 strings
           val utf8Strings = rowStrings.map(x ⇒ UTF8String.fromString(x))
           // Create generic internal row with the required number of columns
-          val row = new GenericInternalRow(utf8Strings.length)
+          val row = new GenericInternalRow(utf8Strings.length-dummyColumnIndices.length)
           // Update column for each row
-          utf8Strings.toList.zipWithIndex.foreach { case (element, index) ⇒ row.update(index, element) }
+          var counter = 0
+          utf8Strings.toList.zipWithIndex.foreach {
+            case (element, index) ⇒ {
+              if (!dummyColumnIndices.contains(index)) {
+                row.update(counter, element)
+                counter = counter + 1
+              }
+            }
+          }
           row
         })
         internalRow

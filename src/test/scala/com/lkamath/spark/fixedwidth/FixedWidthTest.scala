@@ -1,8 +1,10 @@
 package com.lkamath.spark.fixedwidth
 
+import scala.util.Try
+
 import com.lkamath.spark.fixedwidth.FixedWidthHelper.{FixedWidthColumn, FixedWidthFileMetadata, createDataFrame}
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.types.{DateType, IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.specs2.matcher.ShouldMatchers
 import org.scalatest.FlatSpec
@@ -128,8 +130,8 @@ class FixedWidthTest extends FlatSpec with ShouldMatchers {
         StructField("CERT", IntegerType, true)
       )
     )
-    val df = runFixedWidthTest(metadata, fixedWidthUrl, 532, 3, inferSchema = true)
-    assert(df.schema == expectedSchema)
+    val res = Try(runFixedWidthTest(metadata, fixedWidthUrl, 532, 3, inferSchema = true))
+    assert(res.isFailure == true)
   }
 }
 

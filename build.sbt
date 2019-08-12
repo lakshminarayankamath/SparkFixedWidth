@@ -4,7 +4,7 @@ version := "1.0"
 
 scalaVersion := "2.11.8"
 
-val sparkVersion = "2.1.1"
+val sparkVersion = "2.2.0"
 val specs2Version = "3.9.4"
 val scalatestVersion = "3.0.3"
 
